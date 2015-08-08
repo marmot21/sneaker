@@ -3,6 +3,8 @@
 #aim is to keep temp between 32 and 35 C on surface
 MAX_TEMP=360
 MIN_TEMP=338
+ALERT_LOW=300 # 30.0 C
+ALERT_HIGH=380 # 38.0 C
 LOG=/home/pi/temp.log
 PROBE_PATH="/sys/bus/w1/devices/"
 
@@ -50,4 +52,12 @@ else if [ $temp -lt $MIN_TEMP ] && [ `gpio get $GPIO_HM` -eq 1 ]
 	fi
 fi
 
+
+# Alert if out of range
+if [ $temp -gt $ALERT_HIGH ] || [ $temp -lt $ALERT_LOW ]
+then
+	echo [`date '+%c'`]: CRITICAL: "Temp out of range: $tempFP" >> $LOG
+        sendmail marmot.daniel@gmail.com <<< "Subject: Sneaker - Critical 
+Temp out of range: $tempFP, last log:
+`tail $LOG`" &
 exit 0

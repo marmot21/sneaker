@@ -1,0 +1,14 @@
+#!/bin/bash
+
+gatewayIP=`ip route | awk {'print $3'} | head -n1`
+LOG=/home/pi/temp.log
+
+
+ping -c4 $gatewayIP > /dev/null
+
+if [ $? -gt 0 ]; then
+    echo [`date '+%c'`]: Wifi lost, trying to bring up
+    ifup --force wlan0
+fi
+
+exit 0

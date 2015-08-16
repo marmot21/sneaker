@@ -33,7 +33,11 @@ function gpio()
             if [ ! -e $pin_path ]; then
                 echo $pin > $gpio_path/export
             fi
+            previousValue=$pin_path/value
             echo $value > $pin_path/direction
+            if [ $value == "out" ]; then
+                echo $previousValue > $pin_path/value
+            fi
         ;;
 
         get)

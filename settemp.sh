@@ -4,7 +4,7 @@
 MAX_TEMP=360
 MIN_TEMP=338
 ALERT_LOW=300 # 30.0 C
-ALERT_HIGH=380 # 38.0 C
+ALERT_HIGH=400 # 40.0 C
 LOG=/home/pi/temp.log
 PROBE_PATH="/sys/bus/w1/devices/"
 
@@ -14,12 +14,13 @@ GPIO_HM=17
 
 #load gpio stuff
 source gpio
+gpio mode $GPIO_HM out
 
 #check probe is active
 if [ ! -f $PROBE_HEATMAT ]
 then
-	echo [`date '+%c'`]: CRITICAL: "Can't find temp probe!!" >> $LOG
-	 
+	echo [`date '+%c'`]: CRITICAL: "Can't find heatmmat temp probe!!" >> $LOG
+	
 	echo "Temp probe missing, last log:
 `tail $LOG`" | mail -aFrom:pi@marmotic.com -s "Sneaker - Critical" marmot.daniel@gmail.com &
 
@@ -39,19 +40,21 @@ tempRAW=`cat $PROBE_HEATMAT | grep "t=" | sed "s/.*t=\([0-9][0-9]\)/\1/"`
 tempFP=`bc -l <<< "$tempRAW / 1000" | cut -c1-6`
 temp=`expr $tempRAW / 100`
 
+tempAmbRAW=`cat $PROBE_AMBIENT | grep "t=" | sed "s/.*t=\([0-9][0-9]\)/\1/"`
+tempAmbFP=`bc -l <<< "$tempAmbRAW / 1000" | cut -c1-6`
+
 if [ $temp -gt $MAX_TEMP ] && [ `gpio get $GPIO_HM` -eq 0 ]
 then
-	echo [`date '+%c'`]: Event: Temp $tempFP Turning off... >> $LOG
+	echo [`date '+%c'`]: Event: Turning off heatmat, HMtemp: $tempFP >> $LOG
 	gpio mode $GPIO_HM out
-	gpio write $GPIO_HM 1
-	#turn off
+	gpio write $GPIO_HM 1 #turn off
 
 else if [ $temp -lt $MIN_TEMP ] && [ `gpio get $GPIO_HM` -eq 1 ]
 		then
-		echo [`date '+%c'`]: Event: Temp $tempFP Turning on... >> $LOG
+		echo [`date '+%c'`]: Event: Turning on heatmat, HMtemp: $tempFP >> $LOG
 		gpio mode $GPIO_HM out
-		gpio write $GPIO_HM 0
-		#turn on
+		gpio write $GPIO_HM 0 #turn on
+
 	else
 		if [ `gpio get $GPIO_HM` -eq 0 ]
 		then 
@@ -59,7 +62,7 @@ else if [ $temp -lt $MIN_TEMP ] && [ `gpio get $GPIO_HM` -eq 1 ]
 		else
 			MAT_STATUS=OFF
 		fi
-		echo [`date '+%c'`]: temp is: $tempFP HeatMat is $MAT_STATUS >> $LOG
+		echo "[`date '+%c'`]: HeatMat is $tempFP, heat $MAT_STATUS; Ambient: $tempAmbFP" >> $LOG
 	fi
 fi
 

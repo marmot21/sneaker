@@ -10,7 +10,19 @@ PROBE_PATH="/sys/bus/w1/devices/"
 
 PROBE_HEATMAT=$PROBE_PATH"28-04146f7399ff/w1_slave"
 PROBE_AMBIENT=$PROBE_PATH"28-04146f6d29ff/w1_slave"
+PROBE_WRMHIDE=$PROBE_PATH"28-04146f5a3eff/w1_slave"
 GPIO_HM=17
+
+# Get the temp from the tempature file
+function getTemp {
+	echo `cat $1 | grep "t=" | sed "s/.*t=\([0-9][0-9]\)/\1/"`
+}
+
+# Get the temp and return it as a floating point number
+function getTempFP {
+	local tempRAW=`getTemp $1`
+	echo `bc -l <<< "$tempRAW / 1000" | cut -c1-6`
+}
 
 #load gpio stuff
 source gpio
@@ -36,20 +48,22 @@ then
 exit 1
 fi
 
-tempRAW=`cat $PROBE_HEATMAT | grep "t=" | sed "s/.*t=\([0-9][0-9]\)/\1/"`
+# Heatmat temp
+tempRAW=$(getTemp $PROBE_HEATMAT)
 tempFP=`bc -l <<< "$tempRAW / 1000" | cut -c1-6`
-temp=`expr $tempRAW / 100`
+tempHM=`expr $tempRAW / 100`
 
-tempAmbRAW=`cat $PROBE_AMBIENT | grep "t=" | sed "s/.*t=\([0-9][0-9]\)/\1/"`
-tempAmbFP=`bc -l <<< "$tempAmbRAW / 1000" | cut -c1-6`
+# Other tank temps
+tempAmbFP=$(getTempFP $PROBE_AMBIENT)
+tempWrmHideFP=`bc -l <<< "$(getTemp $PROBE_WRMHIDE) / 1000" | cut -c1-6`
 
-if [ $temp -gt $MAX_TEMP ] && [ `gpio get $GPIO_HM` -eq 0 ]
+if [ $tempHM -gt $MAX_TEMP ] && [ `gpio get $GPIO_HM` -eq 0 ]
 then
 	echo [`date '+%c'`]: Event: Turning off heatmat, HMtemp: $tempFP >> $LOG
 	gpio mode $GPIO_HM out
 	gpio write $GPIO_HM 1 #turn off
 
-else if [ $temp -lt $MIN_TEMP ] && [ `gpio get $GPIO_HM` -eq 1 ]
+else if [ $tempHM -lt $MIN_TEMP ] && [ `gpio get $GPIO_HM` -eq 1 ]
 		then
 		echo [`date '+%c'`]: Event: Turning on heatmat, HMtemp: $tempFP >> $LOG
 		gpio mode $GPIO_HM out
@@ -62,13 +76,13 @@ else if [ $temp -lt $MIN_TEMP ] && [ `gpio get $GPIO_HM` -eq 1 ]
 		else
 			MAT_STATUS=OFF
 		fi
-		echo "[`date '+%c'`]: HeatMat is $tempFP, heat $MAT_STATUS; Ambient: $tempAmbFP" >> $LOG
+		echo "[`date '+%c'`] Info: HeatMat $tempFP, heat $MAT_STATUS; WarmHide: $tempWrmHideFP, Ambient: $tempAmbFP" >> $LOG
 	fi
 fi
 
 
 # Alert if out of range
-if [ $temp -gt $ALERT_HIGH ] || [ $temp -lt $ALERT_LOW ]
+if [ $tempHM -gt $ALERT_HIGH ] || [ $tempHM -lt $ALERT_LOW ]
 then
 	echo [`date '+%c'`]: CRITICAL: "Temp out of range: $tempFP" >> $LOG
 	echo "Temp out of range: $tempFP, last log:

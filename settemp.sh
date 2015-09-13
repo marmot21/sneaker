@@ -1,8 +1,8 @@
 #!/bin/bash
 
 #aim is to keep temp between 32 and 35 C on surface
-MAX_TEMP=360
-MIN_TEMP=338
+MAX_TEMP=355
+MIN_TEMP=335
 ALERT_LOW=300 # 30.0 C
 ALERT_HIGH=400 # 40.0 C
 LOG=/home/pi/temp.log

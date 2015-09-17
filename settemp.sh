@@ -1,7 +1,7 @@
 #!/bin/bash
 
 #aim is to keep temp between 32 and 35 C on surface
-MAX_TEMP=355
+MAX_TEMP=360
 MIN_TEMP=335
 ALERT_LOW=300 # 30.0 C
 ALERT_HIGH=400 # 40.0 C
@@ -10,12 +10,14 @@ PROBE_PATH="/sys/bus/w1/devices/"
 NON=1
 NOFF=0
 
-PROBE_HEATMAT=$PROBE_PATH"28-04146f7399ff/w1_slave"
+PROBE_HEATMAT=$PROBE_PATH"28-04146f5905ff/w1_slave"
 PROBE_AMBIENT=$PROBE_PATH"28-04146f6d29ff/w1_slave"
 PROBE_WRMHIDE=$PROBE_PATH"28-04146f5a3eff/w1_slave"
 PROBE_COOLHEAT=$PROBE_PATH"28-04146f755eff/w1_slave"
 GPIO_HM=17
 GPIO_CHM=18
+
+
 
 # Get the temp from the tempature file
 function getTemp {
@@ -35,9 +37,10 @@ function setHM {
 # $4 GPIO Pin
 # $5 GPIO N-ON 0/1
 # $6 HM tempFP - floating point temp
+# $7 HR Name
 
 ## If we are normally off
-if [ "$5" = 0 ]
+if [ "$5" = $NOFF ]
 then
 	local PIN_OFF=1
 	local PIN_ON=0
@@ -48,13 +51,13 @@ fi
 
 if [ $1 -gt $2 ] && [ `gpio get $4` -eq $5 ]
 then
-	echo [`date '+%c'`]: Event: Turning off heatmat, HMtemp: $6 >> $LOG
+	echo [`date '+%c'`]: Event: Turning off $7 heatmat, HMtemp: $6 >> $LOG
 	gpio mode $4 out
 	gpio write $4 $PIN_OFF #turn off
 
 elif [ $1 -lt $3 ] && [ `gpio get $4` -ne $5 ]
 then
-	echo [`date '+%c'`]: Event: Turning on heatmat, HMtemp: $6 >> $LOG
+	echo [`date '+%c'`]: Event: Turning on $7 heatmat, HMtemp: $6 >> $LOG
 	
 	gpio mode $4 out
 	gpio write $4 $PIN_ON #turn on
@@ -94,8 +97,12 @@ tempHM=`expr $tempRAW / 100`
 # Other tank temps
 tempAmbFP=$(getTempFP $PROBE_AMBIENT)
 tempWrmHideFP=$(getTempFP $PROBE_WRMHIDE)
+tempCoolHMFP=$(getTempFP $PROBE_COOLHEAT)
 
-setHM $tempHM $MAX_TEMP $MIN_TEMP $GPIO_HM $NOFF $tempFP
+tempCHM=$(expr $(getTemp $PROBE_COOLHEAT) / 100)
+
+setHM $tempHM $MAX_TEMP $MIN_TEMP $GPIO_HM $NOFF $tempFP "Warm"
+setHM $tempCHM 270 240 18 $NON $tempCoolHMFP "Cool"
 
 if [ `gpio get $GPIO_HM` -eq 0 ]
 then 
@@ -104,7 +111,7 @@ else
 	MAT_STATUS=OFF
 fi	
 	
-echo "[`date '+%c'`] Info: HeatMat $tempFP, heat $MAT_STATUS; WarmHide: $tempWrmHideFP, Ambient: $tempAmbFP" >> $LOG
+echo "[`date '+%c'`] Info: HeatMat $tempFP, heat $MAT_STATUS; WarmHide: $tempWrmHideFP, Ambient: $tempAmbFP", CoolHM: $tempCoolHMFP >> $LOG
 
 # Alert if out of range
 if [ $tempHM -gt $ALERT_HIGH ] || [ $tempHM -lt $ALERT_LOW ]

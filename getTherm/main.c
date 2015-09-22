@@ -1,11 +1,12 @@
 #include <stdio.h>
+#include <fcntl.h>
 
 #define ARGS 2
 
 int main (int argc, char * argv[])
 {
 	// tempature file
-	FILE *temp
+	int tfile;
 
 	if( argc < ARGS)
 	{
@@ -13,6 +14,7 @@ int main (int argc, char * argv[])
 		return 1;
 	}
 
+	tfile = 
 	
 
 	return 0;

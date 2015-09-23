@@ -1,8 +1,16 @@
-all: test
+CC=gcc
+CFLAGS=-Wall -O3
+
+all: build
+
+build: main.o
+	$(CC) main.o -o /usr/bin/getTemp
 
 test: main.o
-	gcc main.o -o test
+	$(CC) main.o -o test
 
 main.o: main.c
-	gcc -c main.c
+	$(CC) $(CFLAGS) -c main.c
 
+clean:
+	rm -f main.o test /usr/bin/getTemp

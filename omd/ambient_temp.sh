@@ -11,5 +11,5 @@ tempAFP=`bc -l <<< "$tempRAW / 1000" | cut -c1-6`
 tempRAW=`getTemp $whide_temp`
 tempWHFP=`bc -l <<< "$tempRAW / 1000" | cut -c1-6`
 
-echo "0 Other_temps abmient=$tempAFP|warm_hide=$tempWHFP"
+echo "0 Other_temps abmient=$tempAFP|warm_hide=$tempWHFP OK - Nothing to check"
 

@@ -20,9 +20,9 @@ GPIO_CHM=18
 
 
 # Get the temp from the tempature file
-function getTemp {
-	echo `cat $1 | grep "t=" | sed "s/.*t=\([0-9][0-9]\)/\1/"`
-}
+#function getTemp {
+#	echo `cat $1 | grep "t=" | sed "s/.*t=\([0-9][0-9]\)/\1/"`
+#}
 
 # Get the temp and return it as a floating point number
 function getTempFP {
@@ -93,6 +93,8 @@ fi
 tempRAW=$(getTemp $PROBE_HEATMAT)
 tempFP=`bc -l <<< "$tempRAW / 1000" | cut -c1-6`
 tempHM=`expr $tempRAW / 100`
+
+echo $tempRAW $tempFP $tempHM
 
 # Other tank temps
 tempAmbFP=$(getTempFP $PROBE_AMBIENT)
